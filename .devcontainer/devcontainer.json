@@ -6,14 +6,16 @@
 		"dockerfile": "Dockerfile",
 		// Choose variant: latest, vnc
 		// Set `vnc` to spin up noVNC services. Useful in GitHub Codespaces.
-		"args": { "VARIANT": "latest" }
+		"args": {
+			"VARIANT": "latest"
+		}
 	},
-
 	// =======================================================================
 	// Uncomment to enable noVNC for GitHub Codespaces
 	// =======================================================================
-
-	// "forwardPorts": [6080],
+	// "forwardPorts": [
+	// 	6080
+	// ],
 	// "overrideCommand": false,
 	// "containerEnv": {
 	// 	// Port for noVNC Web Client & WebSocket
@@ -24,38 +26,35 @@
 	// 	// QEMU launch options. Used in `run_image.sh`
 	// 	"QEMU_OPTS": "-vnc :0"
 	// },
-
-
 	// =======================================================================
 	// Uncomment to enable WSLg integration
 	// =======================================================================
-
 	// "mounts": [
 	// 	"type=bind,source=/tmp/.X11-unix,target=/tmp/.X11-unix"
 	// ],
 	// "containerEnv": {
 	// 	"DISPLAY": "${localEnv:DISPLAY}"
 	// },
-
-
 	// Set *default* container specific settings.json values on container create.
-	"settings": { 
+	"settings": {
 		"terminal.integrated.shell.linux": "/bin/bash"
 	},
-
 	// Add the IDs of extensions you want installed when the container is created.
 	"extensions": [
 		"ms-vscode.cpptools"
 	],
-
 	// Use 'postCreateCommand' to run commands after the container is created.
 	// "postCreateCommand": "uname -a",
-
 	// Comment out connect as root instead. More info: https://aka.ms/vscode-remote/containers/non-root.
 	"remoteUser": "vscode",
-
 	"runArgs": [
 		"--privileged",
 		"--disable-content-trust=true"
-	]
+	],
+
+	// 環境ヘンス設定
+	"remoteEnv": {
+		"OS_DIR": "/workspaces/mikanos-devcontainer/mikanos",
+		"CODE_HOME": "/workspaces/mikanos-devcontainer"
+	}
 }
