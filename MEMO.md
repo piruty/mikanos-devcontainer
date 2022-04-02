@@ -43,3 +43,13 @@ build
 # 辛抱強く待つこと
 ~/osbook/devenv/run_qemu.sh ~/edk2/Build/MikanLoaderX64/DEBUG_CLANG38/X64/Loader.efi
 ```
+
+```bash
+# CPUレジスタの値を表示
+(qemu) info registers
+
+# xコマンド: メモリダンプ
+# x /fmt addr というコマンドを実行する
+# fmt = [個数][フォーマット][サイズ]
+(qemu) x /4xb 0x067ae4c4
+```
