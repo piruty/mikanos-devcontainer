@@ -6,6 +6,7 @@
 #include <Protocol/SimpleFileSystem.h>
 #include <Protocol/DiskIo2.h>
 #include <Protocol/BlockIo.h>
+#include <Guid/FileInfo.h>
 
 struct MemoryMap
 {
@@ -34,25 +35,44 @@ EFI_STATUS GetMemoryMap(struct MemoryMap *map)
       &map->descriptor_version);
 }
 
-const CHAR16* GetMemoryTypeUnicode(EFI_MEMORY_TYPE type) {
-  switch (type) {
-    case EfiReservedMemoryType: return L"EfiReservedMemoryType";
-    case EfiLoaderCode: return L"EfiLoaderCode";
-    case EfiLoaderData: return L"EfiLoaderData";
-    case EfiBootServicesCode: return L"EfiBootServicesCode";
-    case EfiBootServicesData: return L"EfiBootServicesData";
-    case EfiRuntimeServicesCode: return L"EfiRuntimeServicesCode";
-    case EfiRuntimeServicesData: return L"EfiRuntimeServicesData";
-    case EfiConventionalMemory: return L"EfiConventionalMemory";
-    case EfiUnusableMemory: return L"EfiUnusableMemory";
-    case EfiACPIReclaimMemory: return L"EfiACPIReclaimMemory";
-    case EfiACPIMemoryNVS: return L"EfiACPIMemoryNVS";
-    case EfiMemoryMappedIO: return L"EfiMemoryMappedIO";
-    case EfiMemoryMappedIOPortSpace: return L"EfiMemoryMappedIOPortSpace";
-    case EfiPalCode: return L"EfiPalCode";
-    case EfiPersistentMemory: return L"EfiPersistentMemory";
-    case EfiMaxMemoryType: return L"EfiMaxMemoryType";
-    default: return L"InvalidMemoryType";
+const CHAR16 *GetMemoryTypeUnicode(EFI_MEMORY_TYPE type)
+{
+  switch (type)
+  {
+  case EfiReservedMemoryType:
+    return L"EfiReservedMemoryType";
+  case EfiLoaderCode:
+    return L"EfiLoaderCode";
+  case EfiLoaderData:
+    return L"EfiLoaderData";
+  case EfiBootServicesCode:
+    return L"EfiBootServicesCode";
+  case EfiBootServicesData:
+    return L"EfiBootServicesData";
+  case EfiRuntimeServicesCode:
+    return L"EfiRuntimeServicesCode";
+  case EfiRuntimeServicesData:
+    return L"EfiRuntimeServicesData";
+  case EfiConventionalMemory:
+    return L"EfiConventionalMemory";
+  case EfiUnusableMemory:
+    return L"EfiUnusableMemory";
+  case EfiACPIReclaimMemory:
+    return L"EfiACPIReclaimMemory";
+  case EfiACPIMemoryNVS:
+    return L"EfiACPIMemoryNVS";
+  case EfiMemoryMappedIO:
+    return L"EfiMemoryMappedIO";
+  case EfiMemoryMappedIOPortSpace:
+    return L"EfiMemoryMappedIOPortSpace";
+  case EfiPalCode:
+    return L"EfiPalCode";
+  case EfiPersistentMemory:
+    return L"EfiPersistentMemory";
+  case EfiMaxMemoryType:
+    return L"EfiMaxMemoryType";
+  default:
+    return L"InvalidMemoryType";
   }
 }
 
@@ -94,7 +114,7 @@ EFI_STATUS SaveMemoryMap(struct MemoryMap *map, EFI_FILE_PROTOCOL *file)
   return EFI_SUCCESS;
 }
 
-// 
+//
 EFI_STATUS OpenRootDir(EFI_HANDLE image_handle, EFI_FILE_PROTOCOL **root)
 {
   EFI_LOADED_IMAGE_PROTOCOL *loaded_image;
@@ -143,6 +163,63 @@ EFI_STATUS EFIAPI UefiMain(
   SaveMemoryMap(&memmap, memmap_file);
   memmap_file->Close(memmap_file);
   // メモリマップの内容をファイルに保存 ここまで
+
+  // カーネルファイルを読み込む部分
+  EFI_FILE_PROTOCOL *kernel_file;
+  root_dir->Open(
+      root_dir, &kernel_file, L"\\kernel.elf", EFI_FILE_MODE_READ, 0);
+
+  UINTN file_info_size = sizeof(EFI_FILE_INFO) + sizeof(CHAR16) * 12;
+  UINT8 file_info_buffer[file_info_size];
+  kernel_file->GetInfo(
+      kernel_file, &gEfiFileInfoGuid,
+      &file_info_size, file_info_buffer);
+
+  EFI_FILE_INFO *file_info = (EFI_FILE_INFO *)file_info_buffer;
+  UINTN kernel_file_size = file_info->FileSize;
+
+  EFI_PHYSICAL_ADDRESS kernel_base_addr = 0x100000;
+  // ファイルを格納できる十分な大きさのメモリ領域を確保
+  // 引数: メモリ確保の仕方, 確保するメモリ領域の種別, 大きさ, 確保したメモリ領域のアドレスを書き込む変数
+  gBS->AllocatePages(
+      AllocateAddress, EfiLoaderData,
+      (kernel_file_size + 0xfff) / 0x1000, &kernel_base_addr);
+  // ファイル全体を読み込み
+  kernel_file->Read(kernel_file, &kernel_file_size, (VOID *)kernel_base_addr);
+  Print(L"Kernel: 0x%0lx (%lu bytes)\n", kernel_base_addr, kernel_file_size);
+  // カーネルファイルを読み込む部分 ここまで
+
+  // カーネル起動前にブーロサービスを停止させる
+  EFI_STATUS status;
+  // ブートサービスを停止するための関数
+  status = gBS->ExitBootServices(image_handle, memmap.map_key);
+  if (EFI_ERROR(status)) // ブートサービスの停止に失敗した場合
+  {
+    status = GetMemoryMap(&memmap);
+    if (EFI_ERROR(status))
+    {
+      Print(L"failed to get memory map: %r\n", status);
+      while (1)
+        ;
+    }
+    status = gBS->ExitBootServices(image_handle, memmap.map_key);
+    if (EFI_ERROR(status))
+    {
+      Print(L"Could not exit boot service: %r\n", status);
+      while (1)
+        ;
+    }
+  }
+  // カーネル起動前にブーロサービスを停止させる ここまで
+
+  // カーネルを起動する
+  // ELF形式の仕様で、64ビット用のELFのエントリポイントアドレスは、オフセット24バイトの位置から8バイト整数として書かれている
+  UINT64 entry_addr = *(UINT64 *)(kernel_base_addr + 24);
+
+  typedef void EntryPointType(void);
+  EntryPointType *entry_point = (EntryPointType *)entry_addr;
+  entry_point();
+  // カーネルを起動する ここまで
 
   Print(L"All done\n");
 

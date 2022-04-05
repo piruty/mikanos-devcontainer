@@ -53,3 +53,43 @@ build
 # fmt = [個数][フォーマット][サイズ]
 (qemu) x /4xb 0x067ae4c4
 ```
+
+```bash
+# カーネルのビルド
+cd $HOME/workspace/mikanos/kernel
+git checkout osbook_day03a
+clang++ -O2 -Wall -g --target=x86_64-elf -ffreestanding -mno-red-zone -fno-exceptions -fno-rtti -std=c++17 -c main.cpp
+ld.lld --entry KernelMain -z norelro --image-base 0x100000 --static -o kernel.elf main.o
+```
+
+## レジスタ
+
+- AX: RAXレジスタの下位16ビット
+- RIP: CPUが次に実行する命令のメモリアドレスを保持する
+- RFLAGS
+- CR0
+- dec
+- jnz
+
+```bash
+# ELF形式ファイルの詳細情報を取得
+# -h: ELFファイルのヘッダを表示するオプション
+readelf -h xxx.elf
+```
+
+```bash
+# カーネルを起動する
+cd $HOME/edk2
+build
+$HOME/osbook/devenv/run_qemu.sh Build/MikanLoaderX64/DEBUG_CLANG38/X64/Loader.efi $CODE_HOME/mikanos/kernel/kernel.elf
+```
+
+```bash
+# 独自実装のカーネルを起動する
+cd $HOME/edk2
+unlink MikanLoaderPkg
+ln -s $CODE_HOME/myos/MikanLoaderPkg/ ./
+build
+
+$HOME/osbook/devenv/run_qemu.sh Build/MikanLoaderX64/DEBUG_CLANG38/X64/Loader.efi $CODE_HOME/myos/kernel/kernel.elf
+```
