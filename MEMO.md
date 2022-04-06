@@ -56,8 +56,7 @@ build
 
 ```bash
 # カーネルのビルド
-cd $HOME/workspace/mikanos/kernel
-git checkout osbook_day03a
+cd $OS_DIR/kernel
 clang++ -O2 -Wall -g --target=x86_64-elf -ffreestanding -mno-red-zone -fno-exceptions -fno-rtti -std=c++17 -c main.cpp
 ld.lld --entry KernelMain -z norelro --image-base 0x100000 --static -o kernel.elf main.o
 ```
@@ -78,9 +77,12 @@ readelf -h xxx.elf
 ```
 
 ```bash
-# カーネルを起動する
+# mikanosのカーネルを起動する
 cd $HOME/edk2
+unlink MikanLoaderPkg
+ln -s $CODE_HOME/mikanos/MikanLoaderPkg/ ./
 build
+
 $HOME/osbook/devenv/run_qemu.sh Build/MikanLoaderX64/DEBUG_CLANG38/X64/Loader.efi $CODE_HOME/mikanos/kernel/kernel.elf
 ```
 
