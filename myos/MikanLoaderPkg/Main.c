@@ -169,20 +169,22 @@ EFI_STATUS OpenGOP(EFI_HANDLE image_handle, EFI_GRAPHICS_OUTPUT_PROTOCOL **gop)
 }
 
 // ???
-const CHAR16* GetPixelFormatUnicode(EFI_GRAPHICS_PIXEL_FORMAT fmt) {
-  switch (fmt) {
-    case PixelRedGreenBlueReserved8BitPerColor:
-      return L"PixelRedGreenBlueReserved8BitPerColor";
-    case PixelBlueGreenRedReserved8BitPerColor:
-      return L"PixelBlueGreenRedReserved8BitPerColor";
-    case PixelBitMask:
-      return L"PixelBitMask";
-    case PixelBltOnly:
-      return L"PixelBltOnly";
-    case PixelFormatMax:
-      return L"PixelFormatMax";
-    default:
-      return L"InvalidPixelFormat";
+const CHAR16 *GetPixelFormatUnicode(EFI_GRAPHICS_PIXEL_FORMAT fmt)
+{
+  switch (fmt)
+  {
+  case PixelRedGreenBlueReserved8BitPerColor:
+    return L"PixelRedGreenBlueReserved8BitPerColor";
+  case PixelBlueGreenRedReserved8BitPerColor:
+    return L"PixelBlueGreenRedReserved8BitPerColor";
+  case PixelBitMask:
+    return L"PixelBitMask";
+  case PixelBltOnly:
+    return L"PixelBltOnly";
+  case PixelFormatMax:
+    return L"PixelFormatMax";
+  default:
+    return L"InvalidPixelFormat";
   }
 }
 
@@ -221,12 +223,13 @@ EFI_STATUS EFIAPI UefiMain(
         gop->Mode->FrameBufferBase,
         gop->Mode->FrameBufferBase + gop->Mode->FrameBufferSize,
         gop->Mode->FrameBufferSize);
-  
+
   // 全体を白で塗りつぶす
   // FrameBufferSizeBase: フレームバッファーの先頭アドレス
   // FrameBufferSize: 全体のサイズ
-  UINT8* frame_buffer = (UINT8*)gop->Mode->FrameBufferBase;
-  for (UINTN i = 0; i < gop->Mode->FrameBufferSize; ++i) {
+  UINT8 *frame_buffer = (UINT8 *)gop->Mode->FrameBufferBase;
+  for (UINTN i = 0; i < gop->Mode->FrameBufferSize; ++i)
+  {
     frame_buffer[i] = 255; // 255 = 白
   }
   // # GOPの処理 ここまで
@@ -283,9 +286,9 @@ EFI_STATUS EFIAPI UefiMain(
   // ELF形式の仕様で、64ビット用のELFのエントリポイントアドレスは、オフセット24バイトの位置から8バイト整数として書かれている
   UINT64 entry_addr = *(UINT64 *)(kernel_base_addr + 24);
 
-  typedef void EntryPointType(void);
+  typedef void EntryPointType(UINT64, UINT64);
   EntryPointType *entry_point = (EntryPointType *)entry_addr;
-  entry_point();
+  entry_point(gop->Mode->FrameBufferBase, gop->Mode->FrameBufferSize);
   // カーネルを起動する ここまで
 
   Print(L"All done\n");

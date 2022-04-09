@@ -5,12 +5,19 @@
 2. devcontainerの設定でコメントアウトを外さない
   - 外すとqemu経由で動かなかった
 
+## パスの設定
+
+```bash
+export MIKANOS=/workspaces/mikanos-devcontainer/mikanos
+export MYOS=/workspaces/mikanos-devcontainer/myos
+```
+
 ## MikanOSのリンク
 
 ```bash
 cd $HOME/edk2
 unlink MikanLoaderPkg
-ln -s $OS_DIR/MikanLoaderPkg/ ./
+ln -s $MIKANOS/MikanLoaderPkg/ ./
 ```
 
 ## 自作OSのリンク
@@ -18,7 +25,7 @@ ln -s $OS_DIR/MikanLoaderPkg/ ./
 ```bash
 cd $HOME/edk2
 unlink MikanLoaderPkg
-ln -s $CODE_HOME/myos/MikanLoaderPkg/ ./
+ln -s $MYOS/MikanLoaderPkg/ ./
 ```
 
 ## Conf設定の更新
@@ -77,21 +84,38 @@ readelf -h xxx.elf
 ```
 
 ```bash
-# mikanosのカーネルを起動する
+# カーネルのビルドに必要な環境変数を読み込む
+source $HOME/osbook/devenv/buildenv.sh
+
+# カーネルのビルド
+cd $MIKANOS/kernel
+clang++ $CPPFLAGS -O2 --target=x86_64-elf -fno-exceptions -ffreestanding -c main.cpp
+ld.lld $LDFLAGS --entry KernelMain -z norelro --image-base 0x100000 --static -o kernel.elf main.o
+
+# mikanosイメージのビルド
 cd $HOME/edk2
 unlink MikanLoaderPkg
-ln -s $CODE_HOME/mikanos/MikanLoaderPkg/ ./
+ln -s $MIKANOS/MikanLoaderPkg/ ./
 build
 
+# カーネルを使用してOSを起動する
 $HOME/osbook/devenv/run_qemu.sh Build/MikanLoaderX64/DEBUG_CLANG38/X64/Loader.efi $CODE_HOME/mikanos/kernel/kernel.elf
 ```
 
 ```bash
+# カーネルのビルドに必要な環境変数を読み込む
+source $HOME/osbook/devenv/buildenv.sh
+
+# カーネルのビルド
+cd $MYOS/kernel
+clang++ $CPPFLAGS -O2 --target=x86_64-elf -fno-exceptions -ffreestanding -c main.cpp
+ld.lld $LDFLAGS --entry KernelMain -z norelro --image-base 0x100000 --static -o kernel.elf main.o
+
 # 独自実装のカーネルを起動する
 cd $HOME/edk2
 unlink MikanLoaderPkg
-ln -s $CODE_HOME/myos/MikanLoaderPkg/ ./
+ln -s $MYOS/MikanLoaderPkg/ ./
 build
 
-$HOME/osbook/devenv/run_qemu.sh Build/MikanLoaderX64/DEBUG_CLANG38/X64/Loader.efi $CODE_HOME/myos/kernel/kernel.elf
+$HOME/osbook/devenv/run_qemu.sh Build/MikanLoaderX64/DEBUG_CLANG38/X64/Loader.efi $MYOS/kernel/kernel.elf
 ```
