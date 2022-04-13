@@ -8,6 +8,7 @@
 #include <Protocol/DiskIo2.h>
 #include <Protocol/BlockIo.h>
 #include <Guid/FileInfo.h>
+#include "frame_buffer_config.cpp"
 
 struct MemoryMap
 {
@@ -88,7 +89,8 @@ EFI_STATUS SaveMemoryMap(struct MemoryMap *map, EFI_FILE_PROTOCOL *file)
   CHAR8 *header = "Index, Type, Type(name), PhysicalStart, NumberOfPages, Attribute\n";
   len = AsciiStrLen(header);
   status = file->Write(file, &len, header);
-  if (EFI_ERROR(status)) {
+  if (EFI_ERROR(status))
+  {
     return status;
   }
 
@@ -114,7 +116,8 @@ EFI_STATUS SaveMemoryMap(struct MemoryMap *map, EFI_FILE_PROTOCOL *file)
         desc->PhysicalStart, desc->NumberOfPages,
         desc->Attribute & 0xffffflu);
     status = file->Write(file, &len, buf);
-    if (EFI_ERROR(status)) {
+    if (EFI_ERROR(status))
+    {
       return status;
     }
   }
@@ -136,7 +139,8 @@ EFI_STATUS OpenRootDir(EFI_HANDLE image_handle, EFI_FILE_PROTOCOL **root)
       image_handle,
       NULL,
       EFI_OPEN_PROTOCOL_BY_HANDLE_PROTOCOL);
-  if (EFI_ERROR(status)) {
+  if (EFI_ERROR(status))
+  {
     return status;
   }
 
@@ -147,7 +151,8 @@ EFI_STATUS OpenRootDir(EFI_HANDLE image_handle, EFI_FILE_PROTOCOL **root)
       image_handle,
       NULL,
       EFI_OPEN_PROTOCOL_BY_HANDLE_PROTOCOL);
-  if (EFI_ERROR(status)) {
+  if (EFI_ERROR(status))
+  {
     return status;
   }
 
@@ -167,7 +172,8 @@ EFI_STATUS OpenGOP(EFI_HANDLE image_handle, EFI_GRAPHICS_OUTPUT_PROTOCOL **gop)
       NULL,
       &num_gop_handles,
       &gop_handles);
-  if (EFI_ERROR(status)) {
+  if (EFI_ERROR(status))
+  {
     return status;
   }
 
@@ -178,7 +184,8 @@ EFI_STATUS OpenGOP(EFI_HANDLE image_handle, EFI_GRAPHICS_OUTPUT_PROTOCOL **gop)
       image_handle,
       NULL,
       EFI_OPEN_PROTOCOL_BY_HANDLE_PROTOCOL);
-  if (EFI_ERROR(status)) {
+  if (EFI_ERROR(status))
+  {
     return status;
   }
 
@@ -328,14 +335,15 @@ EFI_STATUS EFIAPI UefiMain(
       (kernel_file_size + 0xfff) / 0x1000, &kernel_base_addr);
   if (EFI_ERROR(status))
   {
-    Print(L"failed to allocate pages: %r\n", status);
+    Print(L"failed to allocate pages: %r", status);
     Halt();
   }
 
   // ファイル全体を読み込み
   status = kernel_file->Read(kernel_file, &kernel_file_size, (VOID *)kernel_base_addr);
+  if (EFI_ERROR(status))
   {
-    Print(L"error: %r\n", status);
+    Print(L"error: %r", status);
     Halt();
   }
   Print(L"Kernel: 0x%0lx (%lu bytes)\n", kernel_base_addr, kernel_file_size);
@@ -363,14 +371,36 @@ EFI_STATUS EFIAPI UefiMain(
   }
   // カーネル起動前にブーロサービスを停止させる ここまで
 
-  // カーネルを起動する
+  // ## カーネルを起動する
   // ELF形式の仕様で、64ビット用のELFのエントリポイントアドレスは、オフセット24バイトの位置から8バイト整数として書かれている
   UINT64 entry_addr = *(UINT64 *)(kernel_base_addr + 24);
 
-  typedef void EntryPointType(UINT64, UINT64);
+  // ## 描画に必要な情報を渡す
+  struct FrameBufferConfig config = {
+      (UINT8 *)gop->Mode->FrameBufferBase,
+      gop->Mode->Info->PixelsPerScanLine,
+      gop->Mode->Info->HorizontalResolution,
+      gop->Mode->Info->VerticalResolution,
+      0};
+
+  switch (gop->Mode->Info->PixelFormat)
+  {
+  case PixelRedGreenBlueReserved8BitPerColor:
+    config.pixel_format = kPixelRGBResv8BitPerColor;
+    break;
+  case PixelBlueGreenRedReserved8BitPerColor:
+    config.pixel_format = kPixelBGRResv8BitPerColor;
+    break;
+  default:
+    Print(L"Unimplemented pixel format: %d\n", gop->Mode->Info->PixelFormat);
+    Halt();
+  }
+  // ## 描画に必要な情報を渡す ここまで
+
+  typedef void EntryPointType(const struct FrameBufferConfig *);
   EntryPointType *entry_point = (EntryPointType *)entry_addr;
-  entry_point(gop->Mode->FrameBufferBase, gop->Mode->FrameBufferSize);
-  // カーネルを起動する ここまで
+  entry_point(&config);
+  // ## カーネルを起動する ここまで
 
   Print(L"All done\n");
 
