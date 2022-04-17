@@ -89,8 +89,9 @@ source $HOME/osbook/devenv/buildenv.sh
 
 # カーネルのビルド
 cd $MIKANOS/kernel
-clang++ $CPPFLAGS -O2 --target=x86_64-elf -fno-exceptions -ffreestanding -c main.cpp
-ld.lld $LDFLAGS --entry KernelMain -z norelro --image-base 0x100000 --static -o kernel.elf main.o
+make
+# clang++ $CPPFLAGS -O2 --target=x86_64-elf -fno-exceptions -ffreestanding -c main.cpp
+# ld.lld $LDFLAGS --entry KernelMain -z norelro --image-base 0x100000 --static -o kernel.elf main.o
 
 # mikanosイメージのビルド
 cd $HOME/edk2
@@ -120,3 +121,15 @@ build
 
 $HOME/osbook/devenv/run_qemu.sh Build/MikanLoaderX64/DEBUG_CLANG38/X64/Loader.efi $MYOS/kernel/kernel.elf
 ```
+
+## 通常のnew VS 配置new
+
+- 配置new
+  - new演算子が引数を取る
+  - メモリ領域を確保しない代わりに、引数に指定したメモリ上にインスタンスを作成する
+    - OSによるメモリ管理がない場合でも利用可能
+    - 配列と組み合わせれば、好きな大きさのメモリ領域を確保でき、クラスのインスタンスが生成可能
+- 通常のnew
+  - ヒープ領域にインスタンスを生成する
+    - 関数の実行が終了しても破棄されない
+  - ヒープ領域の確保は、OSがメモリ管理を提供していて可能になる
