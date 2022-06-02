@@ -83,6 +83,8 @@ ld.lld --entry KernelMain -z norelro --image-base 0x100000 --static -o kernel.el
 readelf -h xxx.elf
 ```
 
+## MIKANOSの実行
+
 ```bash
 # カーネルのビルドに必要な環境変数を読み込む
 source $HOME/osbook/devenv/buildenv.sh
@@ -102,6 +104,8 @@ build
 # カーネルを使用してOSを起動する
 $HOME/osbook/devenv/run_qemu.sh Build/MikanLoaderX64/DEBUG_CLANG38/X64/Loader.efi $CODE_HOME/mikanos/kernel/kernel.elf
 ```
+
+## 自作OSの実行
 
 ```bash
 # カーネルのビルドに必要な環境変数を読み込む
