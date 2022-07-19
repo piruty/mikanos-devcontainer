@@ -119,6 +119,7 @@ make
 
 # 独自実装のカーネルを起動する
 cd $HOME/edk2
+source edksetup.sh
 unlink MikanLoaderPkg
 ln -s $MYOS/MikanLoaderPkg/ ./
 build

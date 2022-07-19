@@ -55,6 +55,8 @@
 	// 環境ヘンス設定
 	"remoteEnv": {
 		"OS_DIR": "/workspaces/mikanos-devcontainer/mikanos",
-		"CODE_HOME": "/workspaces/mikanos-devcontainer"
+		"CODE_HOME": "/workspaces/mikanos-devcontainer",
+		"MIKANOS": "/workspaces/mikanos-devcontainer/mikanos",
+		"MYOS": "/workspaces/mikanos-devcontainer/myos"
 	}
 }

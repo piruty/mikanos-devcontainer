@@ -21,6 +21,29 @@ void operator delete(void *obj) noexcept
 char pixel_writer_buf[sizeof(RGBResv8BitPerColorPixelWriter)];
 PixelWriter *pixel_writer;
 
+// console_buf begin
+char console_buf[sizeof(Console)];
+Console *console;
+// console_buf end
+
+// printk begin
+// printk: カーネル内部からメッセージを出すための関数。
+// カーネル内ならどこでも使える。書式整形の機能を持つ
+int printk(const char *format, ...) // ...: 可変長引数
+{
+  va_list ap; // va_list: 可変長引数を受け取る
+  int result;
+  char s[1024];
+
+  va_start(ap, format);
+  result = vsprintf(s, format, ap);
+  va_end(ap);
+
+  console->PutString(s);
+  return result;
+}
+// printk end
+
 // extern "C": C言語形式で関数を定義する
 // C++の定義だと、関数をコンパイルしたときに装飾される（マンダリング）ので、これを防ぐ
 extern "C" void KernelMain(const FrameBufferConfig &frame_buffer_config)
@@ -43,12 +66,13 @@ extern "C" void KernelMain(const FrameBufferConfig &frame_buffer_config)
       pixel_writer->Write(x, y, {255, 255, 255});
     }
   }
-  Console console{*pixel_writer, {0, 0, 0}, {255, 255, 255}};
+  // new_console begin
+  console = new (console_buf) Console{*pixel_writer, {0, 0, 0}, {255, 255, 255}};
+  // new_console end
 
-  char buf[128];
-  for (int i = 0; i < 27; ++i) {
-    sprintf(buf, "line %d\n", i);
-    console.PutString(buf);
+  for (int i = 0; i < 27; ++i)
+  {
+    printk("printk: %d\n", i);
   }
 
   while (1)
