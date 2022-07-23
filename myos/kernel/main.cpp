@@ -6,12 +6,7 @@
 #include "graphics.hpp"
 #include "font.hpp"
 #include "console.hpp"
-
-// 配置newの演算子の定義
-void *operator new(size_t size, void *buf)
-{
-  return buf;
-}
+#include "pci.hpp"
 
 // 配置newの演算子の定義
 void operator delete(void *obj) noexcept
@@ -21,7 +16,6 @@ void operator delete(void *obj) noexcept
 const PixelColor kDesktopBGColor{45, 118, 237};
 const PixelColor kDesktopFGColor{255, 255, 255};
 
-// #@@ mouse_cursor_shape begin
 const int kMouseCursorWidth = 15;
 const int kMouseCursorHeight = 24;
 // @: マウスカーソルの縁。.: マウスカーソルの内側 = 白く塗りつぶす
@@ -51,7 +45,6 @@ const char mouse_cursor_shape[kMouseCursorHeight][kMouseCursorWidth + 1] = {
     "         @.@   ",
     "         @@@   ",
 };
-// #@@ mouse_cursor_shape end
 
 char pixel_writer_buf[sizeof(RGBResv8BitPerColorPixelWriter)];
 PixelWriter *pixel_writer;
@@ -124,6 +117,20 @@ extern "C" void KernelMain(const FrameBufferConfig &frame_buffer_config)
     }
   }
   // #@@end(draw_mouse_cursor)
+
+  // #@@begin(show_devices)
+  auto err = pci::ScanAllBus();
+  printk("ScanAllBus: %s\n", err.Name());
+
+  for (int i = 0; i < pci::num_device; ++i) {
+    const auto& dev = pci::devices[i];
+    auto vendor_id = pci::ReadVendorId(dev.bus, dev.device, dev.function);
+    auto class_code = pci::ReadClassCode(dev.bus, dev.device, dev.function);
+    printk("%d.%d.%d: vend %04x, class %08x, head %02x\n",
+      dev.bus, dev.device, dev.function, vendor_id, class_code, dev.header_type
+    );
+  }
+  // #@@end(show_devices)
 
   while (1)
     __asm__("hlt"); // __asm__(): インラインアセンブラ。アセンブリ言語の命令を埋め込む

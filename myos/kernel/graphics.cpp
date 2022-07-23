@@ -16,7 +16,6 @@ void BGRResv8BitPerColorPixelWriter::Write(int x, int y, const PixelColor &c)
   p[2] = c.r;
 }
 
-// #@@begin(draw_rectangle)
 /**
  * 長方形の枠だけを描画する関数
  * pos: 長方形の左上の座標
@@ -36,9 +35,7 @@ void DrawRectangle(PixelWriter &writer, const Vector2D<int> &pos, const Vector2D
     writer.Write(pos.x + size.x - 1, pos.y + dy, c);
   }
 }
-// #@@end(draw_rectangle)
 
-// #@@begin(fill_rectangle)
 /**
  * 長方形を塗りつぶす関数
  * pos: 長方形の左上の座標
@@ -55,4 +52,3 @@ void FillRectangle(PixelWriter &writer, const Vector2D<int> &pos, const Vector2D
     }
   }
 }
-// #@@end(fill_rectangle)

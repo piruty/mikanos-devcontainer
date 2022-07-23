@@ -16,3 +16,7 @@
 
 - [Executable and Linkable Format - Wikipedia](https://ja.wikipedia.org/wiki/Executable_and_Linkable_Format)
 - [Man page of ELF](https://linuxjm.osdn.jp/html/LDP_man-pages/man5/elf.5.html)
+
+- PCI
+  - Peripheral Component Interconnect
+  - 部品とマザーボードをつなぐための規格
